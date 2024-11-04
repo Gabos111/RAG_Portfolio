@@ -30,6 +30,8 @@ import {
   LabelList,
 } from "recharts";
 import axios from "axios";
+import { useCallback } from "react";
+import debounce from "lodash/debounce";
 
 interface portfolioData {
   name: string;
@@ -61,6 +63,21 @@ interface Message {
   content: string;
 }
 
+interface MetricsData {
+  basic_metrics: {
+    "Total Return": number;
+    "Annual Return": number;
+    "Annual Volatility": number;
+    "Sharpe Ratio": number;
+    "Max Drawdown": number;
+  };
+  risk_metrics: {
+    Beta: number;
+    Alpha: number;
+    "Information Ratio": number;
+  };
+}
+
 export default function Dashboard() {
   const [portfolioData, setPortfolioData] = useState<portfolioData[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -73,7 +90,7 @@ export default function Dashboard() {
     NormalizedPriceData[]
   >([]);
   const [riskReturnData, setRiskReturnData] = useState<RiskReturnData[]>([]);
-
+  const [metricsData, setMetricsData] = useState<MetricsData | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     { role: "bot", content: "Hello! How can I assist you today?" },
   ]);
@@ -84,6 +101,13 @@ export default function Dashboard() {
       try {
         const response = await axios.get("http://127.0.0.1:8000/portfolio");
         setPortfolioData(response.data);
+
+        //metrics
+        const metricsResponse = await axios.get(
+          "http://127.0.0.1:8000/portfolio/metrics"
+        );
+        setMetricsData(metricsResponse.data);
+
         // Fetch prices for small charts
         const pricesResponse = await axios.get<PriceData[]>(
           "http://127.0.0.1:8000/portfolio/prices"
@@ -151,6 +175,11 @@ export default function Dashboard() {
     setInputValue("");
   };
 
+  const debouncedSetInputValue = useCallback(
+    debounce((value: string) => setInputValue(value), 100),
+    []
+  );
+
   return (
     <div className="min-h-screen bg-[#fffff] text-[#00000]">
       {/* Top Section */}
@@ -212,8 +241,8 @@ export default function Dashboard() {
               <Input
                 className="flex-grow mr-2"
                 placeholder="Type your message..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                defaultValue={inputValue}
+                onChange={(e) => debouncedSetInputValue(e.target.value)}
                 onKeyPress={(e) => {
                   if (e.key === "Enter") {
                     handleSendMessage();
@@ -275,6 +304,59 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
+
+      {/* Metrics Section */}
+      <div className="container mx-auto px-4 py-6">
+        {metricsData && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Basic Metrics Card */}
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <h3 className="text-xl font-bold mb-4 text-[#602927]">
+                  Basic Metrics
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.entries(metricsData.basic_metrics).map(
+                    ([key, value]) => (
+                      <div key={key} className="border-b border-gray-200 py-2">
+                        <p className="text-sm text-gray-600">{key}</p>
+                        <p className="text-lg font-semibold">
+                          {typeof value === "number"
+                            ? key.includes("Drawdown")
+                              ? `${(value * 100).toFixed(2)}%`
+                              : value.toFixed(3)
+                            : value}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Risk Metrics Card */}
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <h3 className="text-xl font-bold mb-4 text-[#602927]">
+                  Risk Metrics
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.entries(metricsData.risk_metrics).map(
+                    ([key, value]) => (
+                      <div key={key} className="border-b border-gray-200 py-2">
+                        <p className="text-sm text-gray-600">{key}</p>
+                        <p className="text-lg font-semibold">
+                          {value.toFixed(3)}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Charts Section */}
@@ -380,7 +462,16 @@ export default function Dashboard() {
                     }}
                   />
                   <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-                  <Scatter data={riskReturnData} fill="#602927">
+                  <Scatter
+                    data={riskReturnData.concat([
+                      {
+                        stock: "PORTFOLIO",
+                        annualReturn: 0.2,
+                        annualVolatility: 0.176,
+                      },
+                    ])}
+                    fill="#602927"
+                  >
                     <LabelList dataKey="stock" position="top" />
                   </Scatter>
                 </ScatterChart>

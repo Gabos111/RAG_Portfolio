@@ -1,3 +1,0 @@
-header: Be in the know
-date: Sign up to our newsletter and receive a monthly selection right in your inbox
-content: 
