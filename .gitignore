@@ -5,3 +5,4 @@ data/raw/
 data/raw_processed
 docs/
 .env
+frontend/node_modules/
