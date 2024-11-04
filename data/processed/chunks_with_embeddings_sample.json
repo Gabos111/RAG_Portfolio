@@ -1,0 +1,39 @@
+{
+  "model_name": "all-MiniLM-L6-v2",
+  "embedding_dimension": 384,
+  "sample_chunks": [
+    {
+      "content": "annual report 2023 ubs group our external reporting approach the scope and content of our external reports are determined by swiss legal and regulatory requirements, accounting standards, relevant sto...",
+      "embedding_preview": [
+        -0.08318464457988739,
+        0.006679696496576071,
+        -0.079537533223629,
+        0.032782524824142456,
+        0.044917527586221695,
+        "..."
+      ]
+    },
+    {
+      "content": "selected financial and regulatory key figures for our significant regulated subsidiaries and sub-groups are also included in this report. pillar 3 report of ubs group ag including significant regulate...",
+      "embedding_preview": [
+        0.009830559603869915,
+        -0.020380983129143715,
+        -0.06958005577325821,
+        0.0074711572378873825,
+        0.07739255577325821,
+        "..."
+      ]
+    },
+    {
+      "content": "thanks to our strategy focused on delivering outstanding client services, sustainable profitability, financial strength and sound risk management, we were able to answer the call to help stabilize the...",
+      "embedding_preview": [
+        -0.024480415508151054,
+        0.028622018173336983,
+        -0.04253058508038521,
+        -0.019222049042582512,
+        0.07096461951732635,
+        "..."
+      ]
+    }
+  ]
+}

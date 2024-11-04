@@ -1,0 +1,32 @@
+{
+  "processing_stats": {
+    "total_files": 14,
+    "successful_files": 13,
+    "failed_files": 1,
+    "total_chunks": 3614
+  },
+  "keyword_stats": {
+    "FINANCIAL_METRICS": {
+      "profitability": 2512,
+      "balance_sheet": 12892,
+      "revenue_terms": 3655,
+      "cash_flow": 424
+    },
+    "COMPANY_STATE": {
+      "financial_health": 1432,
+      "growth_indicators": 132,
+      "market_position": 152,
+      "operational_efficiency": 218
+    },
+    "BUSINESS_OUTLOOK": {
+      "future_prospects": 888,
+      "strategic_initiatives": 377,
+      "challenges": 182
+    },
+    "RISK_FACTORS": {
+      "strategic_risks": 36,
+      "financial_risks": 1026,
+      "operational_risks": 72
+    }
+  }
+}
