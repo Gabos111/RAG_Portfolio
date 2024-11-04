@@ -1,0 +1,7 @@
+.venv/
+articles/
+data/processed/
+data/raw/
+data/raw_processed
+docs/
+.env
