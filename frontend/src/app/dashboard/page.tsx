@@ -1,5 +1,5 @@
 "use client";
-
+import React from "react";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -12,20 +12,144 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useEffect } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  LabelList,
+} from "recharts";
+import axios from "axios";
+
+interface portfolioData {
+  name: string;
+  ticker: string;
+  percentage: number;
+  color: string;
+  sector: string;
+}
+
+interface PriceData {
+  Date: string;
+  variable: string;
+  value: number;
+}
+
+interface NormalizedPriceData {
+  Date: string;
+  [key: string]: number | string;
+}
+
+interface RiskReturnData {
+  stock: string;
+  annualReturn: number;
+  annualVolatility: number;
+}
+
+interface Message {
+  role: "user" | "bot";
+  content: string;
+}
 
 export default function Dashboard() {
-  const [messages, setMessages] = useState([
+  const [portfolioData, setPortfolioData] = useState<portfolioData[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  // Chart data states
+  const [pricesData, setPricesData] = useState<PriceData[]>([]);
+  const [stockPrices, setStockPrices] = useState<{
+    [key: string]: Array<{ date: string; price: number }>;
+  }>({});
+  const [normalizedPrices, setNormalizedPrices] = useState<
+    NormalizedPriceData[]
+  >([]);
+  const [riskReturnData, setRiskReturnData] = useState<RiskReturnData[]>([]);
+
+  const [messages, setMessages] = useState<Message[]>([
     { role: "bot", content: "Hello! How can I assist you today?" },
-    {
-      role: "user",
-      content: "Can you tell me about the data in these charts?",
-    },
-    {
-      role: "bot",
-      content:
-        "The charts display various metrics and trends. Which specific chart would you like me to explain?",
-    },
   ]);
+
+  useEffect(() => {
+    // Fetch portfolio data from the backend API
+    const fetchPortfolioData = async () => {
+      try {
+        const response = await axios.get("http://127.0.0.1:8000/portfolio");
+        setPortfolioData(response.data);
+        // Fetch prices for small charts
+        const pricesResponse = await axios.get<PriceData[]>(
+          "http://127.0.0.1:8000/portfolio/prices"
+        );
+        setPricesData(pricesResponse.data);
+
+        // Process data for small charts
+        const stockPricesData: {
+          [key: string]: Array<{ date: string; price: number }>;
+        } = {};
+        pricesResponse.data.forEach((item) => {
+          if (!stockPricesData[item.variable]) {
+            stockPricesData[item.variable] = [];
+          }
+          stockPricesData[item.variable].push({
+            date: item.Date,
+            price: item.value,
+          });
+        });
+        setStockPrices(stockPricesData);
+
+        // Fetch performance data for large charts
+        const performanceResponse = await axios.get(
+          "http://127.0.0.1:8000/portfolio/performance"
+        );
+        setNormalizedPrices(performanceResponse.data.normalized_prices);
+        setRiskReturnData(performanceResponse.data.risk_return_data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchPortfolioData();
+  }, []);
+
+  const handleSendMessage = async () => {
+    if (inputValue.trim() === "") return;
+
+    // Add user message to messages state
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { role: "user", content: inputValue },
+    ]);
+
+    try {
+      // Send user message to backend
+      const response = await axios.post("http://127.0.0.1:8000/chat", {
+        query: inputValue,
+      });
+
+      // Add bot response to messages state
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { role: "bot", content: response.data.answer },
+      ]);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { role: "bot", content: "Sorry, I couldn't process your request." },
+      ]);
+    }
+
+    // Clear input field
+    setInputValue("");
+  };
 
   return (
     <div className="min-h-screen bg-[#fffff] text-[#00000]">
@@ -34,56 +158,13 @@ export default function Dashboard() {
         <div className="h-16 rounded-full flex items-center justify-center">
           <img src="/Pictet.png" alt="Logo" className="h-12 object-contain" />
         </div>{" "}
-        <h1 className="text-3xl font-bold">
+        <h1 className="text-1xl font-bold">
           Interview : Master Trainee Tech Innovation
         </h1>
       </div>
-      <div className="container mx-auto px-4 py-6 flex justify-center items-center">
+      <div className="container mx-auto px-4 py-6 flex flex-col justify-center items-center">
         <h1 className="text-5xl font-bold">The Speaking Portfolio</h1>
-      </div>
-
-      {/* Middle Section - Carousel */}
-      <div className="container mx-auto px-4 py-6">
-        <Carousel className="w-full">
-          <CarouselContent>
-            {/* First Layout - 12 small charts */}
-            <CarouselItem>
-              <div className="grid grid-cols-2 gap-4">
-                {[...Array(12)].map((_, i) => (
-                  <Card key={i} className="bg-white">
-                    <CardContent className="p-4">
-                      <div className="h-[200px] bg-gray-100 flex items-center justify-center">
-                        Chart {i + 1} Placeholder
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CarouselItem>
-            {/* Second Layout - Single large chart */}
-            <CarouselItem>
-              <Card className="bg-white">
-                <CardContent className="p-4">
-                  <div className="h-[600px] bg-gray-100 flex items-center justify-center">
-                    Large Chart 1 Placeholder
-                  </div>
-                </CardContent>
-              </Card>
-            </CarouselItem>
-            {/* Third Layout - Another single large chart */}
-            <CarouselItem>
-              <Card className="bg-white">
-                <CardContent className="p-4">
-                  <div className="h-[600px] bg-gray-100 flex items-center justify-center">
-                    Large Chart 2 Placeholder
-                  </div>
-                </CardContent>
-              </Card>
-            </CarouselItem>
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
+        <p className="text-xl text-[#7a3431] mt-2">Gabriel Veigas Marques</p>
       </div>
 
       {/* Bottom Section - Chatbot */}
@@ -108,9 +189,11 @@ export default function Dashboard() {
                         message.role === "user" ? "bg-[#602927]" : "bg-gray-300"
                       }
                     >
-                      <AvatarFallback>
-                        {message.role === "user" ? "U" : "B"}
-                      </AvatarFallback>
+                      {message.role === "user" ? (
+                        <AvatarImage src="/avatar.png" />
+                      ) : (
+                        <AvatarImage src="/lion.png" />
+                      )}
                     </Avatar>
                     <div
                       className={`mx-2 py-2 px-3 rounded-lg ${
@@ -129,10 +212,179 @@ export default function Dashboard() {
               <Input
                 className="flex-grow mr-2"
                 placeholder="Type your message..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleSendMessage();
+                  }
+                }}
               />
-              <Button className="bg-[#602927] hover:bg-[#7a3431] text-white">
+              <Button
+                className="bg-[#602927] hover:bg-[#7a3431] text-white"
+                onClick={handleSendMessage}
+              >
                 Send
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Portfolio Section */}
+      <div className="container mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold mb-4">My Portfolio</h2>
+        <div className="w-full flex flex-wrap">
+          {/* Left Div */}
+          <div className="w-full md:w-1/2 px-2">
+            <ul>
+              {portfolioData.map((stock, index) => (
+                <li
+                  key={index}
+                  className="flex justify-between py-1 border-b"
+                  style={{ borderColor: "rgba(122, 52, 49, 0.2)" }}
+                >
+                  <span>{stock.name}</span>
+                  <span>{stock.percentage}%</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Right Div */}
+          <div className="w-full md:w-1/2 px-2 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={portfolioData}
+                  dataKey="percentage"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  fill="#8884d8"
+                  label={({ name }) => name}
+                  legendType="none"
+                >
+                  {portfolioData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      <div className="container mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold mb-4">Stock Prices</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.keys(stockPrices).map((stockName, i) => (
+            <Card key={i} className="bg-white">
+              <CardContent className="p-4">
+                <h3 className="text-center font-bold mb-2">{stockName}</h3>
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={stockPrices[stockName]}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <Line
+                        type="monotone"
+                        dataKey="price"
+                        stroke="#602927"
+                        dot={false}
+                      />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Portfolio Analysis Chart */}
+      <div className="container mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold mb-4">Portfolio Performance</h2>
+        <Card className="bg-white">
+          <CardContent className="p-4">
+            <h3 className="text-center font-bold mb-4">
+              Portfolio Performance (Normalized to 100)
+            </h3>
+            <div className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                {normalizedPrices.length > 0 ? (
+                  <LineChart data={normalizedPrices}>
+                    {Object.keys(normalizedPrices[0])
+                      .filter((key) => key !== "date")
+                      .map((stockName, index) => (
+                        <Line
+                          key={index}
+                          type="monotone"
+                          dataKey={stockName}
+                          stroke={`hsl(${(index * 50) % 360}, 70%, 50%)`}
+                          dot={false}
+                        />
+                      ))}
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                  </LineChart>
+                ) : (
+                  <div>No data available</div>
+                )}
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Risk Analysis Chart */}
+      <div className="container mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold mb-4">Risk-Return Analysis</h2>
+        <Card className="bg-white">
+          <CardContent className="p-4">
+            <h3 className="text-center font-bold mb-4">
+              Risk-Return Scatter Plot
+            </h3>
+            <div className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart>
+                  <CartesianGrid />
+                  <XAxis
+                    type="number"
+                    dataKey="annualVolatility"
+                    name="Annual Volatility"
+                    unit=""
+                    label={{
+                      value: "Annual Volatility",
+                      position: "insideBottom",
+                      offset: -5,
+                    }}
+                  />
+                  <YAxis
+                    type="number"
+                    dataKey="annualReturn"
+                    name="Annual Return"
+                    unit=""
+                    label={{
+                      value: "Annual Return",
+                      angle: -90,
+                      position: "insideLeft",
+                      offset: 10,
+                    }}
+                  />
+                  <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                  <Scatter data={riskReturnData} fill="#602927">
+                    <LabelList dataKey="stock" position="top" />
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
