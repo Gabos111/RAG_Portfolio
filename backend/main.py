@@ -19,10 +19,10 @@ logging.basicConfig(level=logging.ERROR)
 
 app = FastAPI()
 
-# Allow CORS (adjust 'allow_origins' for production)
+# Allow CORS 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to specific domains in production
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

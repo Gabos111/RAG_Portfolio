@@ -72,12 +72,13 @@ def construct_prompt(question, relevant_chunks, max_tokens=3000):
         "2. If the context doesn't contain enough information, say so.\n"
         "3. Cite sources when possible.\n"
         "4. Provide detailed financial analysis when relevant.\n\n"
+        "5. when responding, insure a visually structured response with bold and next line addition"
         "Answer: "
     )
 
     return prompt
 
-def generate_answer(prompt, model="gpt-3.5-turbo", temperature=0, max_tokens=500):
+def generate_answer(prompt, model="gpt-3.5-turbo", temperature=0.2, max_tokens=2000):
     """Generate answer using OpenAI's API with the new client."""
     try:
         response = client.chat.completions.create(

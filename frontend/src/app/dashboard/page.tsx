@@ -32,6 +32,7 @@ import {
 import axios from "axios";
 import { useCallback } from "react";
 import debounce from "lodash/debounce";
+import FormattedResponse from "./formattedResponse";
 
 interface portfolioData {
   name: string;
@@ -60,7 +61,7 @@ interface RiskReturnData {
 
 interface Message {
   role: "user" | "bot";
-  content: string;
+  content: string | React.ReactNode;
 }
 
 interface MetricsData {
@@ -94,6 +95,7 @@ export default function Dashboard() {
   const [messages, setMessages] = useState<Message[]>([
     { role: "bot", content: "Hello! How can I assist you today?" },
   ]);
+  const [formattedAnswer, setFormattedAnswer] = useState("");
 
   useEffect(() => {
     // Fetch portfolio data from the backend API
@@ -147,9 +149,16 @@ export default function Dashboard() {
     if (inputValue.trim() === "") return;
 
     // Add user message to messages state
+    const response = await axios.post("http://127.0.0.1:8000/chat", {
+      query: inputValue,
+    });
+
     setMessages((prevMessages) => [
       ...prevMessages,
-      { role: "user", content: inputValue },
+      {
+        role: "bot",
+        content: <FormattedResponse answer={response.data.answer} />,
+      },
     ]);
 
     try {
@@ -167,7 +176,11 @@ export default function Dashboard() {
       console.error("Error sending message:", error);
       setMessages((prevMessages) => [
         ...prevMessages,
-        { role: "bot", content: "Sorry, I couldn't process your request." },
+        {
+          role: "bot",
+          content:
+            "Sorry, I couldn't process your request. Check that you enable the local server.",
+        },
       ]);
     }
 
@@ -231,7 +244,11 @@ export default function Dashboard() {
                           : "bg-gray-200"
                       }`}
                     >
-                      {message.content}
+                      {message.role === "bot" ? (
+                        <FormattedResponse answer={message.content} />
+                      ) : (
+                        message.content
+                      )}
                     </div>
                   </div>
                 </div>
